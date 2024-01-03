@@ -8,6 +8,7 @@ for analyzing [PSRule.Rules.AzureDevOps](https://github.com/cloudyspells/PSRule.
 results captured to an Azure Log Analytics workspace. Azure Pipelines and GitHub Actions yaml
 templates are included to setup a daily analysis of Azure DevOps projects with PSRule.
 
+[![Demo](https://img.youtube.com/vi/dG0kfg87u9U/0.jpg)](https://www.youtube.com/watch?v=dG0kfg87u9U)
 
 ## Getting Started
 
@@ -109,3 +110,9 @@ After the pipeline has completed, check the workbook in the log analytics worksp
 The main workbook is named `Azure DevOps Main` and is available in the `Workbooks` section
 of the log analytics workspace. The workbook will show the results of the last run in 24
 hour intervals.
+
+## References and acknowledgements
+
+- [PSRule](https://microsoft.github.io/PSRule) by @BernieWhite
+- [PSRule.Monitor](https://github.com/microsoft/PSRule.Monitor) by @BernieWhite
+- [PSRule.Rules.AzureDevOps](https://github.com/cloudyspells/PSRule.Rules.AzureDevOps) by Roderick Bant
