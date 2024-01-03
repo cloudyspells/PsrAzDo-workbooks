@@ -142,5 +142,5 @@ resource workspaces_PSRule_CL 'Microsoft.OperationalInsights/workspaces/tables@2
   }
 }
 
-output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
+output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.properties.customerId
 output logAnalyticsSharedKey string = logAnalyticsWorkspace.listKeys().primarySharedKey
