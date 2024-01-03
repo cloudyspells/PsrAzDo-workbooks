@@ -1,0 +1,56 @@
+name: PSRule-ADO
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Set to your variable group containing variables
+  - group: 'azdo-psrule-run'
+
+schedules:
+- cron: "0 6 * * *"
+  displayName: Run every day at 6am
+  branches:
+    include:
+    - '*'
+
+stages:
+  - stage: Run
+    displayName: Run
+    jobs:
+      - job: Run
+        displayName: Run PSRule.Rules.AzureDevOps
+        steps:
+          - checkout: self
+            clean: true
+          - task: PowerShell@2
+            displayName: Install PowerShell Modules
+            inputs:
+              targetType: 'inline'
+              script: |
+                Install-Module -Name PSRule.Monitor -Scope CurrentUser -Force
+                Install-Module -Name PSRule.Rules.AzureDevOps -Scope CurrentUser -Force
+
+          - task: PowerShell@2
+            displayName: Create temporary output directory
+            inputs:
+              targetType: 'inline'
+              script: |
+                New-Item -Path $(Build.SourcesDirectory) -Name Temp -ItemType Directory -Force
+
+          - task: PowerShell@2
+            displayName: Run PSRule
+            inputs:
+              targetType: 'inline'
+              script: |
+                Import-Module PSRule.Monitor
+                Connect-AzDevOps -Organization $(AZDO_ORGANIZATION) -PAT "$(AZDO_PAT)"
+                Export-AzDevOpsRuleData `
+                  -Project $(AZDO_PROJECT) `
+                  -OutputPath .\Temp `
+                $result = Invoke-PSRule -Style AzurePipelines `
+                  -Module PSRule.Rules.AzureDevOps `
+                  -InputPath '$(Build.SourcesDirectory)/Temp/' `
+                  -Format Detect `
+                  -Culture en
+                $result | Send-PSRuleMonitorRecord -WorkspaceId $(logAnalyticsWorkspaceId) -SharedKey $(logAnalyticsSharedKey) -LogName PSRule
