@@ -9,7 +9,6 @@ results captured to an Azure Log Analytics workspace. Azure Pipelines and GitHub
 templates are included to setup a daily analysis of Azure DevOps projects with PSRule.
 
 
-
 ## Getting Started
 
 The following steps will guide you through deploying the log analytics workspace and
@@ -22,9 +21,9 @@ workbooks to your Azure subscription.
 
 ### Deployment
 
-The following steps will guide you through deploying the log analytics workspace and workbooks
-to your Azure subscription. In your local copy of this repository, run the following command
-to create a new resource group:
+The following steps will guide you through deploying the log analytics workspace,
+workbooks and a keyvault to your Azure subscription. In your local copy of this
+repository, run the following command to create a new resource group:
 
 ```powershell
 # Set the location to deploy to
@@ -41,7 +40,10 @@ Next, run the following command to deploy the log analytics workspace and workbo
 az deployment group create `
     --resource-group $resourceGroupName `
     --template-file .\src\bicep\main.bicep `
-    --query properties.outputs
+    --query properties.outputs `
+    -p azDoOrganization='contoso' `
+    -p azDoPAT='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' `
+    -p azDoProject='contoso-project'
 ```
 
 The deployment will run for approximately 5 minutes. Once complete, the output will
@@ -64,10 +66,6 @@ take note of the `value` for `logAnalyticsWorkspaceId` and `logAnalyticSharedKey
 these will be used in in setting up the variables for the Azure Pipelines and GitHub
 Actions templates.
 
-**Note:** The log analytics workspace and the newly created table will take approximately
-15 minutes to show data upon initial creation.
-
-
 ### Azure Pipelines
 
 The following steps will guide you through setting up a daily analysis of Azure DevOps projects
@@ -82,23 +80,11 @@ to the root of the repository:
 
 - `azure-pipelines/psrule-azdo-loganalytics.yaml`
 
-#### Create a Key Vault
-
-Create a new key vault to store the log analytics workspace id and shared key and also
-the Azure DevOps personal access token, Organization and Project name for inspection
-by PSRule. To create a new key vault, follow the steps in [Create a key vault](https://docs.microsoft.com/en-us/azure/key-vault/general/quick-create-portal#create-a-key-vault).
-After creating the key vault, add the following secrets:
-
-- `logAnalyticsWorkspaceId` - The value of `logAnalyticsWorkspaceId` from the deployment output.
-- `logAnalyticSharedKey` - The value of `logAnalyticSharedKey` from the deployment output.
-- `AZDO_PAT` - A personal access token for Azure DevOps with full access to the organization and project.
-- `AZDO_ORGANIZATION` - The name of the Azure DevOps organization.
-- `AZDO_PROJECT` - The name of the Azure DevOps project.
-
 #### Add the Key Vault as a Variable Group in Azure DevOps
 
 Add the key vault as a variable group in Azure DevOps to allow the pipeline to access the
-secrets. To add the key vault as a variable group, follow the steps in [Create a variable group](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups?view=azure-devops&tabs=yaml#create-a-variable-group).
+secrets. The key vault can be found in the resource group specified in the deployment.
+To add the key vault as a variable group, follow the steps in [Create a variable group](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups?view=azure-devops&tabs=yaml#create-a-variable-group).
 When prompted to select a source, select `Azure Key Vault` and select the key vault created
 in the previous step. Name the variable group `azdo-psrule-run` and select `Allow access to all pipelines`.
 
@@ -111,8 +97,11 @@ select the `azure-pipelines/psrule-azdo-loganalytics.yaml` file from the reposit
 
 #### Run the pipeline
 
-Run the pipeline to verify the deployment. The pipeline will run for approximately 2 to 5 minutes depending on the size of the Azure DevOps project. Do not run the pipeline more
+Run the pipeline to verify the setup. The pipeline will run for approximately 2 to 5 minutes depending on the size of the Azure DevOps project. Do not run the pipeline more
 than once a day as the workbook is designed to analyze a single day of data.
+
+**Note:** When running the pipeline for the first time, it will take up to 15 minutes
+for data to appear in the workbook.
 
 #### Check the workbook
 

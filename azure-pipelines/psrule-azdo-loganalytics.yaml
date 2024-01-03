@@ -44,13 +44,15 @@ stages:
               targetType: 'inline'
               script: |
                 Import-Module PSRule.Monitor
-                Connect-AzDevOps -Organization '$(AZDO_ORGANIZATION)' -PAT "$(AZDO_PAT)"
+                Connect-AzDevOps -Organization '$(AZDO-ORGANIZATION)' -PAT "$(AZDO-PAT)"
                 Export-AzDevOpsRuleData `
-                  -Project '$(AZDO_PROJECT)' `
+                  -Project '$(AZDO-PROJECT)' `
                   -OutputPath .\Temp
                 $result = Invoke-PSRule `
-                  -Module PSRule.Rules.AzureDevOps `
+                  -Module PSRule.Rules.AzureDevOps,PSRule.Monitor `
                   -InputPath '$(Build.SourcesDirectory)/Temp/' `
                   -Format Detect `
                   -Culture en
                 $result | Send-PSRuleMonitorRecord -WorkspaceId '$(logAnalyticsWorkspaceId)' -SharedKey '$(logAnalyticsSharedKey)' -LogName PSRule
+            env:
+              PSRULE_CONVENTION_INCLUDE: "Monitor.LogAnalytics.Import"

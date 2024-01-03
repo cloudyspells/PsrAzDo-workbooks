@@ -1,5 +1,22 @@
 targetScope = 'resourceGroup'
+
+@description('Azure DevOps Organization')
+param azDoOrganization string
+
+@description('Azure DevOps Personal Access Token')
+@secure()
+param azDoPAT string
+
+@description('Azure DevOps Project')
+param azDoProject string
+
+@description('Log Analytics Workspace Name')
 param logAnalyticsWorkspace_Name string = 'log-psrule-azdo-prd-weu'
+
+@description('Key Vault Name')
+param keyVault_Name string = 'kv-psrule-azdo-prd-weu'
+
+@description('Location for all resources')
 param location string = 'westeurope'
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
@@ -18,6 +35,61 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12
     }
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: keyVault_Name
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enabledForDeployment: true
+    enabledForTemplateDeployment: true
+    enableRbacAuthorization: true
+  }
+}
+
+resource secretWorkspaceId 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'logAnalyticsWorkspaceId'
+  properties: {
+    value: logAnalyticsWorkspace.properties.customerId
+  }
+}
+
+resource secretWorkspaceSharedKey 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'logAnalyticsSharedKey'
+  properties: {
+    value: logAnalyticsWorkspace.listKeys().primarySharedKey
+  }
+}
+
+resource secretAzDoPAT 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'AZDO-PAT'
+  properties: {
+    value: azDoPAT
+  }
+}
+
+resource secretAzDoOrganization 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'AZDO-ORGANIZATION'
+  properties: {
+    value: azDoOrganization
+  }
+}
+
+resource secretAzDoProject 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'AZDO-PROJECT'
+  properties: {
+    value: azDoProject
   }
 }
 
@@ -77,70 +149,3 @@ resource workspaces_AzureDevOpsAuditing 'Microsoft.OperationalInsights/workspace
     retentionInDays: 30
   }
 }
-
-
-resource workspaces_PSRule_CL 'Microsoft.OperationalInsights/workspaces/tables@2021-12-01-preview' = {
-  parent: logAnalyticsWorkspace
-  name: 'PSRule_CL'
-  properties: {
-    totalRetentionInDays: 30
-    plan: 'Analytics'
-    schema: {
-      name: 'PSRule_CL'
-      columns: [
-        {
-          name: 'RuleId_s'
-          type: 'string'
-        }
-        {
-          name: 'RuleName_s'
-          type: 'string'
-        }
-        {
-          name: 'DisplayName_s'
-          type: 'string'
-        }
-        {
-          name: 'TargetName_s'
-          type: 'string'
-        }
-        {
-          name: 'TargetType_s'
-          type: 'string'
-        }
-        {
-          name: 'Outcome_s'
-          type: 'string'
-        }
-        {
-          name: 'Field_s'
-          type: 'string'
-        }
-        {
-          name: 'Annotations_s'
-          type: 'string'
-        }
-        {
-          name: 'RunId_s'
-          type: 'string'
-        }
-        {
-          name: 'CorrelationId'
-          type: 'string'
-        }
-        {
-          name: 'Duration_d'
-          type: 'real'
-        }
-        {
-          name: 'TimeGenerated'
-          type: 'datetime'
-        }
-      ]
-    }
-    retentionInDays: 30
-  }
-}
-
-output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.properties.customerId
-output logAnalyticsSharedKey string = logAnalyticsWorkspace.listKeys().primarySharedKey
