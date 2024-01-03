@@ -48,7 +48,7 @@ stages:
                 Export-AzDevOpsRuleData `
                   -Project $(AZDO_PROJECT) `
                   -OutputPath .\Temp
-                $result = Invoke-PSRule -Style AzurePipelines `
+                $result = Invoke-PSRule `
                   -Module PSRule.Rules.AzureDevOps `
                   -InputPath '$(Build.SourcesDirectory)/Temp/' `
                   -Format Detect `
