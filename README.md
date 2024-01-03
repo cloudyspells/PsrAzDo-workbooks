@@ -95,6 +95,13 @@ After creating the key vault, add the following secrets:
 - `AZDO_ORGANIZATION` - The name of the Azure DevOps organization.
 - `AZDO_PROJECT` - The name of the Azure DevOps project.
 
+#### Add the Key Vault as a Variable Group in Azure DevOps
+
+Add the key vault as a variable group in Azure DevOps to allow the pipeline to access the
+secrets. To add the key vault as a variable group, follow the steps in [Create a variable group](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups?view=azure-devops&tabs=yaml#create-a-variable-group).
+When prompted to select a source, select `Azure Key Vault` and select the key vault created
+in the previous step. Name the variable group `azdo-psrule-run` and select `Allow access to all pipelines`.
+
 #### Create the pipeline
 
 Create a new pipeline in Azure DevOps to run the PSRule analysis. To create a new pipeline,
