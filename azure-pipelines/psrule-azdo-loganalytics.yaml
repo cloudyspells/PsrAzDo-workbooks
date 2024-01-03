@@ -47,7 +47,7 @@ stages:
                 Connect-AzDevOps -Organization $(AZDO_ORGANIZATION) -PAT "$(AZDO_PAT)"
                 Export-AzDevOpsRuleData `
                   -Project $(AZDO_PROJECT) `
-                  -OutputPath .\Temp `
+                  -OutputPath .\Temp
                 $result = Invoke-PSRule -Style AzurePipelines `
                   -Module PSRule.Rules.AzureDevOps `
                   -InputPath '$(Build.SourcesDirectory)/Temp/' `
