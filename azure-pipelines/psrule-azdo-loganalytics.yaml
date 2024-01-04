@@ -45,9 +45,7 @@ stages:
               script: |
                 Import-Module PSRule.Monitor
                 Connect-AzDevOps -Organization '$(AZDO-ORGANIZATION)' -PAT "$(AZDO-PAT)"
-                Export-AzDevOpsRuleData `
-                  -Project '$(AZDO-PROJECT)' `
-                  -OutputPath .\Temp
+                Export-AzDevOpsOrganizationRuleData -OutputPath .\Temp
                 $result = Invoke-PSRule `
                   -Module PSRule.Rules.AzureDevOps,PSRule.Monitor `
                   -InputPath '$(Build.SourcesDirectory)/Temp/' `

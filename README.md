@@ -5,9 +5,12 @@
 This repository contains an Azure Monitor Workbooks deployment
 written in [Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
 for analyzing [PSRule.Rules.AzureDevOps](https://github.com/cloudyspells/PSRule.Rules.AzureDevOps)
-results captured to an Azure Log Analytics workspace. Azure Pipelines and GitHub Actions yaml
-templates are included to setup a daily analysis of Azure DevOps projects with PSRule.
+results captured to an Azure Log Analytics workspace. Azure Pipelines and GitHub Actions
+yaml templates are included to setup a daily analysis of Azure DevOps Organizations with
+PSRule. The analysis will loop through all projects in the organization and capture
+the results.
 
+[![Demo](https://img.youtube.com/vi/dG0kfg87u9U/0.jpg)](https://www.youtube.com/watch?v=dG0kfg87u9U)
 
 ## Getting Started
 
@@ -42,29 +45,13 @@ az deployment group create `
     --template-file .\src\bicep\main.bicep `
     --query properties.outputs `
     -p azDoOrganization='contoso' `
-    -p azDoPAT='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' `
-    -p azDoProject='contoso-project'
+    -p azDoPAT='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 ```
 
-The deployment will run for approximately 5 minutes. Once complete, the output will
-contain the following properties:
-
-```json
-{
-  "logAnalyticSharedKey": {
-    "type": "String",
-    "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  },
-  "logAnalyticsWorkspaceId": {
-    "type": "String",
-    "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  }
-}
-```
-
-take note of the `value` for `logAnalyticsWorkspaceId` and `logAnalyticSharedKey` as
-these will be used in in setting up the variables for the Azure Pipelines and GitHub
-Actions templates.
+The deployment will take approximately 5 minutes to complete. After the deployment
+has completed, there will be a log analytics workspace with workbooks and a key vault
+available in the resource group. The key vault will contain the necessary secrets
+to run the analysis with PSRule from an Azure Pipeline.
 
 ### Azure Pipelines
 
@@ -109,3 +96,9 @@ After the pipeline has completed, check the workbook in the log analytics worksp
 The main workbook is named `Azure DevOps Main` and is available in the `Workbooks` section
 of the log analytics workspace. The workbook will show the results of the last run in 24
 hour intervals.
+
+## References and acknowledgements
+
+- [PSRule](https://microsoft.github.io/PSRule) by [@BernieWhite](https://github.com/BernieWhite)
+- [PSRule.Monitor](https://github.com/microsoft/PSRule.Monitor) by [@BernieWhite](https://github.com/BernieWhite)
+- [PSRule.Rules.AzureDevOps](https://github.com/cloudyspells/PSRule.Rules.AzureDevOps) by [Roderick Bant](https://github.com/webtonize)
