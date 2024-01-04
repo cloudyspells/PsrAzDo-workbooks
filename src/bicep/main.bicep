@@ -8,13 +8,13 @@ param azDoOrganization string
 param azDoPAT string
 
 @description('Log Analytics Workspace Name')
-param logAnalyticsWorkspace_Name string = 'log-psrule-azdo-prd-weu'
+param logAnalyticsWorkspace_Name string = 'log-azdo-${uniqueString(subscription().subscriptionId, resourceGroup().id)}'
 
 @description('Key Vault Name')
-param keyVault_Name string = 'kv-psrule-azdo-prd-weu'
+param keyVault_Name string = 'kv-azdo-${uniqueString(subscription().subscriptionId, resourceGroup().id)}'
 
 @description('Location for all resources')
-param location string = 'westeurope'
+param location string = resourceGroup().location
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
   name: logAnalyticsWorkspace_Name
