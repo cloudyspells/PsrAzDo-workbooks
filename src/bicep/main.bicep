@@ -7,9 +7,6 @@ param azDoOrganization string
 @secure()
 param azDoPAT string
 
-@description('Azure DevOps Project')
-param azDoProject string
-
 @description('Log Analytics Workspace Name')
 param logAnalyticsWorkspace_Name string = 'log-psrule-azdo-prd-weu'
 
@@ -82,14 +79,6 @@ resource secretAzDoOrganization 'Microsoft.KeyVault/vaults/secrets@2023-07-01' =
   name: 'AZDO-ORGANIZATION'
   properties: {
     value: azDoOrganization
-  }
-}
-
-resource secretAzDoProject 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'AZDO-PROJECT'
-  properties: {
-    value: azDoProject
   }
 }
 
