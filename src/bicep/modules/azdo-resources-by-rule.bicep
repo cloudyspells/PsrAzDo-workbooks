@@ -21,13 +21,29 @@ var workbook = {
             id: '3f1e834c-9a51-41b3-aa49-88a8834e7aba'
             version: 'KqlParameterItem/1.0'
             name: 'ruleName'
-            type: 1
+            label: 'Rule Name'
+            type: 2
+            isRequired: true
+            multiSelect: true
+            quote: '\''
+            delimiter: ','
+            query: 'PSRule_CL\r\n| summarize by DisplayName_s'
+            typeSettings: {
+              additionalResourceOptions: [
+                'value::all'
+              ]
+              selectAllValue: 'All Rules'
+              showDefault: false
+            }
             timeContext: {
               durationMs: 86400000
             }
+            defaultValue: 'value::all'
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
           }
         ]
-        style: 'pills'
+        style: 'above'
         queryType: 0
         resourceType: 'microsoft.operationalinsights/workspaces'
       }
@@ -37,7 +53,7 @@ var workbook = {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| where DisplayName_s == \'{ruleName}\' or \'All Rules\' == \'{ruleName}\'\r\n| where TimeGenerated >= datetime_add(\'day\', -1, now())\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| project [\'Resource FQN\']=TargetName_s, [\'Outcome\']=Outcome_s\r\n| sort by Outcome asc'
+        query: 'PSRule_CL\r\n| where DisplayName_s in ({ruleName}) or \'All Rules\' in ({ruleName})\r\n| where TimeGenerated >= datetime_add(\'day\', -1, now())\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| project [\'Resource FQN\']=TargetName_s, [\'Outcome\']=Outcome_s\r\n| sort by Outcome asc'
         size: 0
         timeContext: {
           durationMs: 86400000
