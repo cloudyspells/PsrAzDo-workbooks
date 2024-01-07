@@ -16,13 +16,101 @@ var workbook = {
   version: 'Notebook/1.0'
   items: [
     {
+      type: 9
+      content: {
+        version: 'KqlParameterItem/1.0'
+        parameters: [
+          {
+            id: '168ebd5b-4dec-441f-aa49-6a1d239a7a2e'
+            version: 'KqlParameterItem/1.0'
+            name: 'runId'
+            label: 'Run ID'
+            type: 2
+            description: 'Select Run ID to display'
+            isRequired: true
+            query: 'PSRule_CL\r\n| summarize Date=format_datetime(max(TimeGenerated), "yyyy-MM-dd HH:mm") by RunId_s\r\n| sort by Date desc'
+            typeSettings: {
+              additionalResourceOptions: []
+              showDefault: false
+            }
+            timeContext: {
+              durationMs: 2592000000
+            }
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+            value: 'c442098b2437a6f6f3496768ba2f698790ecab2f'
+          }
+          {
+            id: 'ae4e2baa-2cc1-4dc6-a31b-0b0ca2dcf2c1'
+            version: 'KqlParameterItem/1.0'
+            name: 'Organization'
+            type: 2
+            description: 'Select Azure DevOps Organizations to display'
+            isRequired: true
+            multiSelect: true
+            quote: '\''
+            delimiter: ','
+            query: 'PSRule_CL\r\n| extend \r\n    f=parse_json(Field_s)\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization\r\n| summarize by tostring(Organization)'
+            typeSettings: {
+              additionalResourceOptions: [
+                'value::all'
+              ]
+              selectAllValue: 'All Organizations'
+              showDefault: false
+            }
+            timeContext: {
+              durationMs: 2592000000
+            }
+            defaultValue: 'value::all'
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+            value: [
+              'value::all'
+            ]
+          }
+          {
+            id: 'c3cf7295-b99d-448c-abef-4194c8f78c44'
+            version: 'KqlParameterItem/1.0'
+            name: 'Project'
+            type: 2
+            description: 'Select Azure DevOps Project to display'
+            isRequired: true
+            multiSelect: true
+            quote: '\''
+            delimiter: ','
+            query: 'PSRule_CL\r\n| extend\r\n    f=parse_json(Field_s)\r\n| extend\r\n    expandedId=parse_json(tostring(f.id))\r\n| extend\r\n    [\'Project\']=expandedId.[\'project\']\r\n| summarize by tostring(Project)'
+            typeSettings: {
+              additionalResourceOptions: [
+                'value::all'
+              ]
+              selectAllValue: 'All Projects'
+              showDefault: false
+            }
+            timeContext: {
+              durationMs: 2592000000
+            }
+            defaultValue: 'value::all'
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+            value: [
+              'value::all'
+            ]
+          }
+        ]
+        style: 'above'
+        queryType: 0
+        resourceType: 'microsoft.operationalinsights/workspaces'
+      }
+      name: 'parameters - 3'
+    }
+    {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| where TimeGenerated >= datetime_add(\'day\', -1, now())\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed checkpoints\'] = countif(Outcome_s == \'Fail\')\r\n    by tostring(TargetName_s)\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project [\'Resource FQN\'] = TargetName_s, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed checkpoints\']\r\n| summarize [\'Resources\'] = dcount([\'Resource FQN\']) by Findings\r\n| render piechart with (xcolumn=Findings, ycolumns=Resources)\r\n\r\n'
+        query: 'PSRule_CL\r\n| where RunId_s == \'{runId:value}\'\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed checkpoints\'] = countif(Outcome_s == \'Fail\')\r\n    by tostring(TargetName_s)\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project [\'Resource FQN\'] = TargetName_s, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed checkpoints\']\r\n| summarize [\'Resources\'] = dcount([\'Resource FQN\']) by Findings\r\n| render piechart with (xcolumn=Findings, ycolumns=Resources)\r\n\r\n'
         size: 4
         timeContext: {
-          durationMs: 86400000
+          durationMs: 2592000000
         }
         queryType: 0
         resourceType: 'microsoft.operationalinsights/workspaces'
@@ -135,10 +223,10 @@ var workbook = {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| where TimeGenerated >= datetime_add(\'day\', -1, now())\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed Rules\'] = countif(Outcome_s == \'Fail\'),\r\n        [\'Passed Rules\'] = countif(Outcome_s == \'Pass\')\r\n    by tostring(TargetName_s)\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project [\'Resource FQN\'] = TargetName_s, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed Rules\'], [\'Passed Rules\']\r\n| where Findings == \'{SeverityFilter}\' or \'All Resources\' == \'{SeverityFilter}\'\r\n'
+        query: 'PSRule_CL\r\n| where RunId_s == \'{runId:value}\'\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))    \r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed Rules\'] = countif(Outcome_s == \'Fail\'),\r\n        [\'Passed Rules\'] = countif(Outcome_s == \'Pass\')\r\n    by tostring(TargetName_s)\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project Organization, Project, [\'Resource Name\']=ResourceName, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed Rules\'], [\'Passed Rules\'], [\'Resource FQN\'] = TargetName_s\r\n| where Findings == \'{SeverityFilter}\' or \'All Resources\' == \'{SeverityFilter}\'\r\n'
         size: 0
         timeContext: {
-          durationMs: 86400000
+          durationMs: 2592000000
         }
         exportedParameters: [
           {
@@ -155,7 +243,7 @@ var workbook = {
         gridSettings: {
           formatters: [
             {
-              columnMatch: 'Resource FQN'
+              columnMatch: 'Resource Name'
               formatter: 7
               formatOptions: {
                 linkTarget: 'WorkbookTemplate'
@@ -165,21 +253,25 @@ var workbook = {
                   resourceIdsSource: 'workbook'
                   templateIdSource: 'static'
                   templateId: AzDoRuleHitsByResourceId
-                  typeSource: 'default'
-                  gallerySource: 'default'
+                  typeSource: 'workbook'
+                  gallerySource: 'workbook'
                   locationSource: 'default'
                   workbookName: 'Resource Rule details'
                   passSpecificParams: true
                   templateParameters: [
                     {
                       name: 'resourceName'
-                      source: 'cell'
-                      value: ''
+                      source: 'column'
+                      value: 'Resource FQN'
+                    }
+                    {
+                      name: 'runId'
+                      source: 'parameter'
+                      value: 'runId'
                     }
                   ]
-                  viewerMode: true
+                  viewerMode: false
                 }
-                customColumnWidthSetting: '70ch'
               }
             }
             {
@@ -225,6 +317,34 @@ var workbook = {
                     text: '{0}{1}'
                   }
                 ]
+              }
+            }
+            {
+              columnMatch: 'Resource FQN'
+              formatter: 7
+              formatOptions: {
+                linkTarget: 'WorkbookTemplate'
+                linkIsContextBlade: true
+                workbookContext: {
+                  componentIdSource: 'workbook'
+                  resourceIdsSource: 'workbook'
+                  templateIdSource: 'static'
+                  templateId: AzDoRuleHitsByResourceId
+                  typeSource: 'default'
+                  gallerySource: 'default'
+                  locationSource: 'default'
+                  workbookName: 'Resource Rule details'
+                  passSpecificParams: true
+                  templateParameters: [
+                    {
+                      name: 'resourceName'
+                      source: 'cell'
+                      value: ''
+                    }
+                  ]
+                  viewerMode: true
+                }
+                customColumnWidthSetting: '70ch'
               }
             }
             {

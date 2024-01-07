@@ -23,6 +23,7 @@ var workbook = {
             name: 'resourceName'
             label: 'Resource Name'
             type: 2
+            description: 'Name of the resource of the rule hits'
             isRequired: true
             multiSelect: true
             quote: '\''
@@ -33,33 +34,63 @@ var workbook = {
                 'value::all'
               ]
               selectAllValue: 'All Resources'
+              showDefault: false
             }
             timeContext: {
-              durationMs: 86400000
+              durationMs: 2592000000
             }
             defaultValue: 'value::all'
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
+            value: [
+              'value::all'
+            ]
+          }
+          {
+            id: '496436b2-fb7b-4288-887e-0ea21dbd8134'
+            version: 'KqlParameterItem/1.0'
+            name: 'runId'
+            label: 'Run ID'
+            type: 2
+            description: 'Select results from this run'
+            isRequired: true
+            query: 'PSRule_CL\r\n| summarize Date=format_datetime(max(TimeGenerated),\'yyyy-MM-dd HH:mm\') by RunId_s'
+            typeSettings: {
+              additionalResourceOptions: []
+              showDefault: false
+            }
+            timeContext: {
+              durationMs: 2592000000
+            }
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+            value: null
           }
         ]
         style: 'above'
         queryType: 0
         resourceType: 'microsoft.operationalinsights/workspaces'
       }
-      conditionalVisibility: {
-        parameterName: 'resourceName'
-        comparison: 'isEqualTo'
-      }
+      conditionalVisibilities: [
+        {
+          parameterName: 'runId'
+          comparison: 'isEqualTo'
+        }
+        {
+          parameterName: 'resourceName'
+          comparison: 'isEqualTo'
+        }
+      ]
       name: 'parameters - 1'
     }
     {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| where TimeGenerated >= datetime_add(\'day\', -1, now()) and (\'All Resources\' in ({resourceName}) or TargetName_s in ({resourceName}))\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| project [\'Resource FQN\']=TargetName_s,Rule=DisplayName_s,Outcome=Outcome_s,Severity,[\'Rule Help Url\'],severity_level\r\n| sort by severity_level desc'
+        query: '\r\nPSRule_CL\r\n| where RunId_s == \'{runId}\'\r\n| where (\'All Resources\' in ({resourceName}) or TargetName_s in ({resourceName}))\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| project [\'Resource FQN\']=TargetName_s,Rule=DisplayName_s,Outcome=Outcome_s,Severity,[\'Rule Help Url\'],severity_level\r\n| sort by severity_level desc'
         size: 0
         timeContext: {
-          durationMs: 86400000
+          durationMs: 2592000000
         }
         queryType: 0
         resourceType: 'microsoft.operationalinsights/workspaces'
