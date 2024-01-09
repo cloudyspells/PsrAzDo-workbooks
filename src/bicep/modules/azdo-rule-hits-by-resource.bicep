@@ -43,7 +43,7 @@ var workbook = {
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
             value: [
-              'value::all'
+              'Azure.DevOps.Repo/cloudyspells.psrule-scan-ado.demo-scan-ado'
             ]
           }
           {
@@ -54,7 +54,7 @@ var workbook = {
             type: 2
             description: 'Select results from this run'
             isRequired: true
-            query: 'PSRule_CL\r\n| summarize Date=format_datetime(max(TimeGenerated),\'yyyy-MM-dd HH:mm\') by RunId_s'
+            query: 'PSRule_CL\r\n| summarize Date=format_datetime(max(TimeGenerated),\'yyyy-MM-dd HH:mm\') by RunId_s\r\n| sort by Date desc'
             typeSettings: {
               additionalResourceOptions: []
               showDefault: false
@@ -64,7 +64,7 @@ var workbook = {
             }
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
-            value: null
+            value: 'psrule-scan-ado/285'
           }
         ]
         style: 'above'
@@ -82,6 +82,29 @@ var workbook = {
         }
       ]
       name: 'parameters - 1'
+    }
+    {
+      type: 3
+      content: {
+        version: 'KqlItem/1.0'
+        query: '\r\nPSRule_CL\r\n| where (\'All Resources\' in ({resourceName}) or TargetName_s in ({resourceName}))\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend [\'Resource Id\']=f.id, Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| project RunId_s,[\'Resource FQN\']=TargetName_s,Rule=DisplayName_s,Outcome=Outcome_s,Severity,[\'Rule Help Url\'],severity_level,TimeGenerated\r\n| extend Findings = case(\r\n    severity_level == 1, "Informational",\r\n    severity_level == 2, "Important",\r\n    severity_level == 3, "Severe",\r\n    severity_level == 4, "Critical",\r\n    severity_level == 0, "Passed",\r\n    "Not found")\r\n| summarize [\'Hit count\']=count(), [\'Audit Date\']=format_datetime(max(TimeGenerated), "yyyy-MM-dd HH:mm") by Findings, RunId_s\r\n| sort by [\'Audit Date\'] asc\r\n'
+        size: 1
+        aggregation: 5
+        timeContext: {
+          durationMs: 2592000000
+        }
+        queryType: 0
+        resourceType: 'microsoft.operationalinsights/workspaces'
+        visualization: 'linechart'
+        chartSettings: {
+          xAxis: 'Audit Date'
+          group: 'Findings'
+          createOtherGroup: null
+          showLegend: true
+          showDataPoints: true
+        }
+      }
+      name: 'query - 2'
     }
     {
       type: 3
