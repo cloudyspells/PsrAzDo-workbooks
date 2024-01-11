@@ -10,7 +10,7 @@ yaml templates are included to setup a daily analysis of Azure DevOps Organizati
 PSRule. The analysis will loop through all projects in the organization and capture
 the results.
 
-[![Demo video on YouTube](https://img.youtube.com/vi/x9crSs-6P-o/0.jpg)](https://www.youtube.com/watch?v=x9crSs-6P-o)
+[![Demo video on YouTube](https://img.youtube.com/vi/bcF7mf3MlbQ/0.jpg)](https://www.youtube.com/watch?v=bcF7mf3MlbQ)
 
 ## Getting Started
 
