@@ -78,7 +78,7 @@ var workbook = {
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
             value: [
-              'value::all'
+              'psrule-scan-ado'
             ]
           }
         ]
@@ -92,7 +92,7 @@ var workbook = {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| sort by TimeGenerated asc \r\n| extend \r\n    a=parse_json(Annotations_s),\r\n    f=parse_json(Field_s)\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))     \r\n| summarize \r\n    [\'Audit DateTime\']=max(TimeGenerated),\r\n    [\'Failed Checkpoints\']=countif(Outcome_s == \'Fail\'),\r\n    [\'Passed Checkpoints\']=countif(Outcome_s == \'Pass\'),\r\n    [\'Rules Checked\']=dcount(RuleName_s),\r\n    [\'Resources Checked\']=dcount(TargetName_s)\r\n  by \r\n    RunId_s\r\n//| project RunId_s, todatetime([\'Audit DateTime\']), [\'Rules Checked\'], [\'Resources Checked\'], [\'Failed Checkpoints\'], [\'Passed Checkpoints\']\r\n| sort by [\'Audit DateTime\'] desc\r\n| top 4 by [\'Audit DateTime\'] desc'
+        query: 'PSRule_CL\r\n| sort by TimeGenerated asc \r\n| extend \r\n    a=parse_json(Annotations_s),\r\n    f=parse_json(Field_s)\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))     \r\n| summarize \r\n    [\'Audit DateTime\']=format_datetime(max(TimeGenerated), "yyyy-MM-dd HH:mm"),\r\n    [\'Failed Checkpoints\']=countif(Outcome_s == \'Fail\'),\r\n    [\'Passed Checkpoints\']=countif(Outcome_s == \'Pass\'),\r\n    [\'Total Checkpoints\']=count(Outcome_s),\r\n    [\'Rules Checked\']=dcount(RuleName_s),\r\n    [\'Resources Checked\']=dcount(TargetName_s)\r\n  by \r\n    RunId_s\r\n//| project RunId_s, todatetime([\'Audit DateTime\']), [\'Rules Checked\'], [\'Resources Checked\'], [\'Failed Checkpoints\'], [\'Passed Checkpoints\']\r\n| sort by [\'Audit DateTime\'] desc\r\n| extend\r\n    [\'Pass Percentage\']=round(100 * todecimal([\'Passed Checkpoints\']) / todecimal([\'Total Checkpoints\']), 2)\r\n| extend\r\n    [\'Trend\']=round([\'Pass Percentage\'] - next([\'Pass Percentage\']), 2)    \r\n| top 4 by [\'Audit DateTime\'] desc'
         size: 4
         timeContext: {
           durationMs: 2592000000
@@ -103,8 +103,9 @@ var workbook = {
         tileSettings: {
           titleContent: {
             columnMatch: 'Audit DateTime'
-            formatter: 6
+            formatter: 1
             dateFormat: {
+              showUtcTime: null
               formatName: 'shortDateTimePattern'
             }
             tooltipFormat: {
@@ -117,50 +118,79 @@ var workbook = {
               tooltip: 'Resources checked'
             }
           }
-          leftContent: {
-            columnMatch: 'Failed Checkpoints'
-            formatter: 12
-            formatOptions: {
-              palette: 'red'
-            }
-            tooltipFormat: {
-              tooltip: 'Failed checkpoints'
-            }
-          }
           rightContent: {
-            columnMatch: 'Passed Checkpoints'
-            formatter: 12
+            columnMatch: 'Trend'
+            formatter: 18
             formatOptions: {
-              palette: 'green'
+              thresholdsOptions: 'icons'
+              thresholdsGrid: [
+                {
+                  operator: '=='
+                  thresholdValue: '0'
+                  representation: 'Subtract'
+                  text: '{0}{1}'
+                }
+                {
+                  operator: '<'
+                  thresholdValue: '0'
+                  representation: 'trenddown'
+                  text: '{0}{1}'
+                }
+                {
+                  operator: '>'
+                  thresholdValue: '0'
+                  representation: 'trendup'
+                  text: '{0}{1}'
+                }
+                {
+                  operator: 'Default'
+                  thresholdValue: null
+                  representation: 'success'
+                  text: '{0}{1}'
+                }
+              ]
               compositeBarSettings: {
                 labelText: ''
                 columnSettings: []
               }
             }
+            numberFormat: {
+              unit: 1
+              options: {
+                style: 'decimal'
+                minimumFractionDigits: 2
+              }
+            }
             tooltipFormat: {
-              tooltip: 'Passed checkpoints'
+              tooltip: 'Pass trend'
             }
           }
           secondaryContent: {
-            columnMatch: 'Rules Checked'
-            formatter: 2
+            columnMatch: 'Pass Percentage'
+            formatter: 22
             formatOptions: {
               compositeBarSettings: {
-                labelText: ''
+                labelText: 'Pass percentage ["Pass Percentage"]%'
                 columnSettings: [
-                  {
-                    columnName: 'Failed Checkpoints'
-                    color: 'redBright'
-                  }
                   {
                     columnName: 'Passed Checkpoints'
                     color: 'green'
                   }
+                  {
+                    columnName: 'Failed Checkpoints'
+                    color: 'redBright'
+                  }
                 ]
               }
             }
+            numberFormat: {
+              unit: 1
+              options: {
+                style: 'decimal'
+              }
+            }
             tooltipFormat: {
-              tooltip: 'Rules checked'
+              tooltip: 'Pass Percentage'
             }
           }
           showBorder: true
@@ -273,13 +303,14 @@ var workbook = {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| sort by TimeGenerated asc \r\n| extend \r\n    a=parse_json(Annotations_s),\r\n    f=parse_json(Field_s)\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))     \r\n| summarize \r\n    [\'Audit DateTime\']=max(TimeGenerated),\r\n    [\'Failed Checkpoints\']=countif(Outcome_s == \'Fail\'),\r\n    [\'Passed Checkpoints\']=countif(Outcome_s == \'Pass\'),\r\n    [\'Rules Checked\']=dcount(RuleName_s),\r\n    [\'Resources Checked\']=dcount(TargetName_s)\r\n  by \r\n    RunId_s\r\n| project RunId_s, todatetime([\'Audit DateTime\']), [\'Rules Checked\'], [\'Resources Checked\'], [\'Failed Checkpoints\'], [\'Passed Checkpoints\']\r\n| sort by [\'Audit DateTime\'] desc\r\n'
+        query: 'PSRule_CL\r\n| sort by TimeGenerated asc \r\n| extend \r\n    a=parse_json(Annotations_s),\r\n    f=parse_json(Field_s)\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))     \r\n| summarize \r\n    [\'Audit DateTime\']=max(TimeGenerated),\r\n    [\'Failed Checkpoints\']=countif(Outcome_s == \'Fail\'),\r\n    [\'Passed Checkpoints\']=countif(Outcome_s == \'Pass\'),\r\n    [\'Total Checkpoints\']=count(Outcome_s),\r\n    [\'Rules Checked\']=dcount(RuleName_s),\r\n    [\'Resources Checked\']=dcount(TargetName_s)\r\n  by \r\n    RunId_s\r\n| extend\r\n    [\'Pass Percentage\']=round(100 * todecimal([\'Passed Checkpoints\']) / todecimal([\'Total Checkpoints\']), 2)\r\n| project RunId_s, todatetime([\'Audit DateTime\']), [\'Rules Checked\'], [\'Resources Checked\'], [\'Failed Checkpoints\'], [\'Passed Checkpoints\'], [\'Pass Percentage\']\r\n| sort by [\'Audit DateTime\'] desc\r\n| extend\r\n    [\'Trend\']=round([\'Pass Percentage\'] - next([\'Pass Percentage\']), 2)'
         size: 0
         timeContext: {
           durationMs: 2592000000
         }
         queryType: 0
         resourceType: 'microsoft.operationalinsights/workspaces'
+        visualization: 'table'
         gridSettings: {
           formatters: [
             {
@@ -328,6 +359,12 @@ var workbook = {
                   viewerMode: false
                 }
               }
+              numberFormat: {
+                unit: 17
+                options: {
+                  style: 'decimal'
+                }
+              }
             }
             {
               columnMatch: 'Resources Checked'
@@ -364,6 +401,12 @@ var workbook = {
                   viewerMode: false
                 }
               }
+              numberFormat: {
+                unit: 17
+                options: {
+                  style: 'decimal'
+                }
+              }
             }
             {
               columnMatch: 'Failed Checkpoints'
@@ -377,6 +420,56 @@ var workbook = {
               formatter: 0
               formatOptions: {
                 aggregation: 'Sum'
+              }
+            }
+            {
+              columnMatch: 'Pass Percentage'
+              formatter: 1
+              numberFormat: {
+                unit: 1
+                options: {
+                  style: 'decimal'
+                }
+              }
+            }
+            {
+              columnMatch: 'Trend'
+              formatter: 18
+              formatOptions: {
+                thresholdsOptions: 'icons'
+                thresholdsGrid: [
+                  {
+                    operator: '=='
+                    thresholdValue: '0'
+                    representation: 'Subtract'
+                    text: '{0}{1}'
+                  }
+                  {
+                    operator: '<'
+                    thresholdValue: '0'
+                    representation: 'trenddown'
+                    text: '{0}{1}'
+                  }
+                  {
+                    operator: '>'
+                    thresholdValue: '0'
+                    representation: 'trendup'
+                    text: '{0}{1}'
+                  }
+                  {
+                    operator: 'Default'
+                    thresholdValue: null
+                    representation: 'success'
+                    text: '{0}{1}'
+                  }
+                ]
+              }
+              numberFormat: {
+                unit: 1
+                options: {
+                  style: 'decimal'
+                  minimumFractionDigits: 2
+                }
               }
             }
           ]

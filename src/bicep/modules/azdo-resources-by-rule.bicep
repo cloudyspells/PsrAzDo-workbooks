@@ -41,6 +41,9 @@ var workbook = {
             defaultValue: 'value::all'
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
+            value: [
+              'Azure.DevOps.Tasks.VariableGroup.Description'
+            ]
           }
           {
             id: '69ed445b-75d8-41bd-bd99-ed5a99a0cc3a'
@@ -60,7 +63,7 @@ var workbook = {
             }
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
-            value: 'daf923fb2463077368e92134a02eda43787659ec'
+            value: 'psrule-scan-ado/288'
           }
           {
             id: '01f572fc-067d-4429-9be7-9299a08122fd'
@@ -110,6 +113,9 @@ var workbook = {
             defaultValue: 'value::all'
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
+            value: [
+              'value::all'
+            ]
           }
         ]
         style: 'above'
@@ -117,6 +123,39 @@ var workbook = {
         resourceType: 'microsoft.operationalinsights/workspaces'
       }
       name: 'parameters - 0'
+    }
+    {
+      type: 3
+      content: {
+        version: 'KqlItem/1.0'
+        query: 'PSRule_CL\r\n| where DisplayName_s in ({ruleName}) or \'All Rules\' in ({ruleName})\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))    \r\n| summarize\r\n    [\'Passed Resources\']=countif(Outcome_s == \'Pass\'),\r\n    [\'Failed Resources\']=countif(Outcome_s == \'Fail\'),\r\n    [\'Percentage Passed\']=round(100 * todecimal(countif(Outcome_s == \'Pass\')) / todecimal(count()), 2),\r\n    [\'Audit Date Time\']=max(TimeGenerated)\r\n  by RunId_s\r\n| project [\'Audit Date Time\'], [\'Percentage Passed\']'
+        size: 4
+        aggregation: 2
+        timeContext: {
+          durationMs: 2592000000
+        }
+        queryType: 0
+        resourceType: 'microsoft.operationalinsights/workspaces'
+        visualization: 'linechart'
+        chartSettings: {
+          xAxis: 'Audit Date Time'
+          yAxis: [
+            'Percentage Passed'
+          ]
+          showLegend: true
+          showDataPoints: true
+          ySettings: {
+            numberFormatSettings: {
+              unit: 1
+              options: {
+                style: 'decimal'
+                useGrouping: true
+              }
+            }
+          }
+        }
+      }
+      name: 'query - 2'
     }
     {
       type: 3
