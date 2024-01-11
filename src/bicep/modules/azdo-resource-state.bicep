@@ -38,7 +38,7 @@ var workbook = {
             }
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
-            value: 'c442098b2437a6f6f3496768ba2f698790ecab2f'
+            value: 'psrule-scan-ado/287'
           }
           {
             id: 'ae4e2baa-2cc1-4dc6-a31b-0b0ca2dcf2c1'
@@ -93,7 +93,7 @@ var workbook = {
             queryType: 0
             resourceType: 'microsoft.operationalinsights/workspaces'
             value: [
-              'value::all'
+              'psrule-scan-ado'
             ]
           }
         ]
@@ -223,7 +223,7 @@ var workbook = {
       type: 3
       content: {
         version: 'KqlItem/1.0'
-        query: 'PSRule_CL\r\n| where RunId_s == \'{runId:value}\'\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))    \r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed Rules\'] = countif(Outcome_s == \'Fail\'),\r\n        [\'Passed Rules\'] = countif(Outcome_s == \'Pass\')\r\n    by tostring(TargetName_s)\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project Organization, Project, [\'Resource Name\']=ResourceName, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed Rules\'], [\'Passed Rules\'], [\'Resource FQN\'] = TargetName_s\r\n| where Findings == \'{SeverityFilter}\' or \'All Resources\' == \'{SeverityFilter}\'\r\n'
+        query: 'PSRule_CL\r\n| where RunId_s == \'{runId:value}\'\r\n| extend a=parse_json(Annotations_s), f=parse_json(Field_s)\r\n| extend Severity=a.severity, [\'Rule Help Url\']=a.[\'online version\'],Category=a.category\r\n| extend \r\n    expandedId=parse_json(tostring(f.id))\r\n| extend \r\n    Organization=expandedId.organization,\r\n    [\'Project\']=expandedId.[\'project\'],\r\n    ResourceName=expandedId.resourceName\r\n| where (Organization in ({Organization}) or \'All Organizations\' in ({Organization})) and (Project in ({Project}) or \'All Projects\' in ({Project}))    \r\n| extend severity_level = case(\r\n    Severity == "Informational" and Outcome_s == \'Fail\', 1,\r\n    Severity == "Important" and Outcome_s == \'Fail\', 2,\r\n    Severity == "Severe" and Outcome_s == \'Fail\', 3,\r\n    Severity == "Critical" and Outcome_s == \'Fail\', 4,\r\n    0)\r\n| summarize\r\n        [\'Resource state\'] = arg_max(severity_level, *),\r\n        [\'Failed Rules\'] = countif(Outcome_s == \'Fail\'),\r\n        [\'Passed Rules\'] = countif(Outcome_s == \'Pass\')\r\n    by tostring(TargetName_s)\r\n| sort by [\'Resource state\'] desc\r\n| extend Findings = case(\r\n    [\'Resource state\'] == 1, "Informational",\r\n    [\'Resource state\'] == 2, "Important",\r\n    [\'Resource state\'] == 3, "Severe",\r\n    [\'Resource state\'] == 4, "Critical",\r\n    [\'Resource state\'] == 0, "Passed all rules",\r\n    "Not found")\r\n| project Organization, Project, [\'Resource Name\']=ResourceName, [\'Resource Type\'] = TargetType_s, Findings, [\'Failed Rules\'], [\'Passed Rules\'], [\'Resource FQN\'] = TargetName_s\r\n| where Findings == \'{SeverityFilter}\' or \'All Resources\' == \'{SeverityFilter}\'\r\n'
         size: 0
         timeContext: {
           durationMs: 2592000000
